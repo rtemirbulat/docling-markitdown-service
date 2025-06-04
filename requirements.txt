@@ -1,0 +1,12 @@
+fastapi==0.110.2
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+streamlit==1.35.0
+openai==1.30.1
+faiss-cpu==1.8.0
+pydantic==2.7.1
+docling==2.36.0
+markitdown[all]==0.1.2
+pytest==8.2.1
+httpx==0.27.0
+python-dotenv==1.0.1 
