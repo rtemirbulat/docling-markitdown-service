@@ -37,7 +37,7 @@ def load_faiss_index(file_id: str, pipeline: str):
 
 # Поиск top_k ближайших чанков
 
-def search_faiss_index(file_id: str, pipeline: str, query_emb: List[float], top_k: int = 5) -> List[Tuple[int, float]]:
+def search_faiss_index(file_id: str, pipeline: str, query_emb: List[float], top_k: int = 5) -> Tuple[List[Tuple[int, float]], list]:
     index, passages = load_faiss_index(file_id, pipeline)
     arr = np.array([query_emb]).astype('float32')
     D, I = index.search(arr, top_k)

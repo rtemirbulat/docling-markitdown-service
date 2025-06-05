@@ -1,7 +1,7 @@
 import openai
 import os
 from backend.utils.params import SCHOOL_PARAMS, PARAM_VARIANTS
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 assert OPENAI_API_KEY, "OPENAI_API_KEY не найден в окружении!"
@@ -21,9 +21,10 @@ def build_prompt(passages: List[str], question: str) -> str:
 
 """
     for i, passage in enumerate(passages):
-        prompt += f"Фрагмент {i+1}:
+        # Добавляем очередной фрагмент документа в prompt (KISS)
+        prompt += f"""Фрагмент {i+1}:
 {passage}
-\n"
+\n"""
     prompt += f"\nВопрос: {question}\n\nОтвет верни в виде JSON, где ключи — параметры, а значения — строки или null. Не придумывай значения, если их нет в тексте."
     return prompt
 
@@ -37,17 +38,19 @@ def ask_llm(prompt: str) -> str:
         temperature=0.0,
         max_tokens=512
     )
-    return response.choices[0].message.content
+    # Гарантируем возврат строки, даже если content == None (KISS)
+    return response.choices[0].message.content or ""
 
 # Постобработка: привести ключи к SCHOOL_PARAMS, учесть варианты
 
-def normalize_answer(llm_json: Dict[str, str]) -> Dict[str, str]:
+def normalize_answer(llm_json: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
     """
     Приводит ключи к SCHOOL_PARAMS, учитывая русские варианты.
+    Возвращает значения параметров или None, если не найдено (KISS, SOLID)
     """
-    result = {k: None for k in SCHOOL_PARAMS}
+    result: Dict[str, Optional[str]] = {k: None for k in SCHOOL_PARAMS}  # Инициализация с None
     for key, value in llm_json.items():
         for param, variants in PARAM_VARIANTS.items():
             if key.lower() in [v.lower() for v in variants] or key.lower() == param.lower():
-                result[param] = value
+                result[param] = value  # Присваиваем строку или None
     return result 
