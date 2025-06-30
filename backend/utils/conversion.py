@@ -1,7 +1,11 @@
 import os
 import tempfile
 import subprocess
+import logging
 from typing import Literal
+import time
+
+logger = logging.getLogger(__name__)
 
 # Исключения для обработки ошибок
 class ConversionError(Exception):
@@ -31,7 +35,7 @@ def convert_with_docling(input_path: str, output_path: str) -> bool:
         _write_markdown(md_str, output_path)
         return True
     except Exception as e:
-        print(f"[DocLing] Python API не сработал: {e}")
+        logger.warning("[DocLing] Python API failed: %s", e, exc_info=True)
 
     # 2) Фолбэк: CLI
     try:
@@ -42,10 +46,10 @@ def convert_with_docling(input_path: str, output_path: str) -> bool:
             timeout=60,
         )
         if result.returncode != 0:
-            print(f"[DocLing CLI] stderr:\n{result.stderr}")
+            logger.warning("[DocLing CLI] stderr:\n%s", result.stderr)
         return result.returncode == 0
     except Exception as e:
-        print(f"[DocLing CLI] Ошибка: {e}")
+        logger.warning("[DocLing CLI] Exception: %s", e, exc_info=True)
         return False
 
 # Конвертация через Markitdown
@@ -57,18 +61,22 @@ def convert_with_markitdown(input_path: str, output_path: str) -> bool:
     """
     # 1) Python-API
     try:
+        start = time.time()
+        logger.info("[MarkItDown] Converting via Python API: %s -> %s", input_path, output_path)
         from markitdown import MarkItDown  # type: ignore
 
         md_converter = MarkItDown(enable_plugins=False)
         result = md_converter.convert(input_path)
         md_str = result.text_content
         _write_markdown(md_str, output_path)
+        logger.info("[MarkItDown] Python API finished in %.2f sec", time.time() - start)
         return True
     except Exception as e:
-        print(f"[MarkItDown] Python API не сработал: {e}")
+        logger.warning("[MarkItDown] Python API failed: %s", e, exc_info=True)
 
     # 2) CLI fallback
     try:
+        logger.info("[MarkItDown CLI] Running markitdown %s -o %s", input_path, output_path)
         result = subprocess.run(
             ["markitdown", input_path, "-o", output_path],
             capture_output=True,
@@ -76,10 +84,12 @@ def convert_with_markitdown(input_path: str, output_path: str) -> bool:
             timeout=60,
         )
         if result.returncode != 0:
-            print(f"[MarkItDown CLI] stderr:\n{result.stderr}")
+            logger.warning("[MarkItDown CLI] stderr:\n%s", result.stderr)
+        else:
+            logger.info("[MarkItDown CLI] Finished in %.2f sec", result.elapsed.total_seconds() if hasattr(result, "elapsed") else 0)
         return result.returncode == 0
     except Exception as e:
-        print(f"[MarkItDown CLI] Ошибка: {e}")
+        logger.warning("[MarkItDown CLI] Exception: %s", e, exc_info=True)
         return False
 
 # Универсальный конвертер с fallback
@@ -90,11 +100,12 @@ def convert_to_markdown(input_path: str, output_path: str, pipeline: Literal["do
     Если выбран markitdown и он не сработал — fallback на docling.
     Возвращает имя pipeline, который реально сработал.
     """
+    logger.info("[Conversion] Requested pipeline: %s for %s", pipeline, input_path)
     if pipeline == "markitdown":
         ok = convert_with_markitdown(input_path, output_path)
         if ok:
             return "markitdown"
-        print("[Conversion] Markitdown не сработал, fallback на DocLing...")
+        logger.warning("[Conversion] Markitdown не сработал, fallback на DocLing...")
         ok = convert_with_docling(input_path, output_path)
         if ok:
             return "docling"
@@ -103,7 +114,7 @@ def convert_to_markdown(input_path: str, output_path: str, pipeline: Literal["do
         ok = convert_with_docling(input_path, output_path)
         if ok:
             return "docling"
-        print("[Conversion] DocLing не сработал, fallback на Markitdown...")
+        logger.warning("[Conversion] DocLing не сработал, fallback на Markitdown...")
         ok = convert_with_markitdown(input_path, output_path)
         if ok:
             return "markitdown"
