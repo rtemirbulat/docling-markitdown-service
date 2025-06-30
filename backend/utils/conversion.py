@@ -7,38 +7,79 @@ from typing import Literal
 class ConversionError(Exception):
     pass
 
+# Helper: write markdown string to file
+def _write_markdown(md_text: str, output_path: str):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(md_text)
+
 # Конвертация через DocLing
 
 def convert_with_docling(input_path: str, output_path: str) -> bool:
     """
-    Конвертирует файл в Markdown с помощью DocLing CLI.
-    Возвращает True при успехе.
+    Преобразует документ в Markdown через библиотеку DocLing. Сначала
+    пытается использовать Python-API (`DocumentConverter`), а при неудаче
+    откатывается к CLI-команде `docling convert`.
     """
+    # 1) Пробуем Python-API
     try:
-        # DocLing поддерживает команду: docling convert input -o output.md
-        result = subprocess.run([
-            "docling", "convert", input_path, "-o", output_path
-        ], capture_output=True, text=True, timeout=30)
+        from docling.document_converter import DocumentConverter  # type: ignore
+
+        converter = DocumentConverter()
+        result = converter.convert(input_path)
+        md_str = result.document.export_to_markdown()
+        _write_markdown(md_str, output_path)
+        return True
+    except Exception as e:
+        print(f"[DocLing] Python API не сработал: {e}")
+
+    # 2) Фолбэк: CLI
+    try:
+        result = subprocess.run(
+            ["docling", "convert", input_path, "-o", output_path],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if result.returncode != 0:
+            print(f"[DocLing CLI] stderr:\n{result.stderr}")
         return result.returncode == 0
     except Exception as e:
-        print(f"[DocLing] Ошибка: {e}")
+        print(f"[DocLing CLI] Ошибка: {e}")
         return False
 
 # Конвертация через Markitdown
 
 def convert_with_markitdown(input_path: str, output_path: str) -> bool:
     """
-    Конвертирует файл в Markdown с помощью Markitdown CLI.
-    Возвращает True при успехе.
+    Конвертирует файл в Markdown с помощью MarkItDown. Сначала пытаемся
+    Python-API (`MarkItDown`), затем CLI-утилиту.
     """
+    # 1) Python-API
     try:
-        # Markitdown поддерживает команду: markitdown input -o output.md
-        result = subprocess.run([
-            "markitdown", input_path, "-o", output_path
-        ], capture_output=True, text=True, timeout=30)
+        from markitdown import MarkItDown  # type: ignore
+
+        md_converter = MarkItDown(enable_plugins=False)
+        result = md_converter.convert(input_path)
+        md_str = result.text_content
+        _write_markdown(md_str, output_path)
+        return True
+    except Exception as e:
+        print(f"[MarkItDown] Python API не сработал: {e}")
+
+    # 2) CLI fallback
+    try:
+        result = subprocess.run(
+            ["markitdown", input_path, "-o", output_path],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        if result.returncode != 0:
+            print(f"[MarkItDown CLI] stderr:\n{result.stderr}")
         return result.returncode == 0
     except Exception as e:
-        print(f"[Markitdown] Ошибка: {e}")
+        print(f"[MarkItDown CLI] Ошибка: {e}")
         return False
 
 # Универсальный конвертер с fallback

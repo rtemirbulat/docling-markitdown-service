@@ -20,7 +20,7 @@ class JobStatusResponse(BaseModel):
 class QueryRequest(BaseModel):
     question: str
     top_k: int = 5
-    pipeline: Literal["docling", "markitdown"]
+    pipeline: Literal["docling", "markitdown", "markdown"]
 
 class QueryResult(BaseModel):
     answer: Dict[str, str]  # Ключи — параметры школы

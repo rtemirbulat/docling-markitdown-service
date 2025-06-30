@@ -10,11 +10,11 @@ st.set_page_config(page_title="DocLing-Markitdown Service", layout="wide")
 st.title("DocLing-Markitdown Service")
 
 # Выбор pipeline
-pipeline = st.selectbox("Pipeline для конвертации:", ["docling", "markitdown"])
+pipeline = st.selectbox("Pipeline:", ["docling", "markitdown", "markdown"])
 
 # Загрузка файла или ZIP
 st.header("Загрузка документа")
-uploaded_file = st.file_uploader("Выберите файл (PDF, DOCX, XLSX, PPTX, ZIP)", type=["pdf", "docx", "xlsx", "pptx", "zip"])
+uploaded_file = st.file_uploader("Выберите файл (PDF, DOCX, XLSX, PPTX, MD, ZIP)", type=["pdf", "docx", "xlsx", "pptx", "md", "zip"])
 
 if uploaded_file:
     is_zip = uploaded_file.name.lower().endswith(".zip")

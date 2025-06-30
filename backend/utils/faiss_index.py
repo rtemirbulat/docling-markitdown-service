@@ -18,6 +18,8 @@ def get_meta_path(file_id: str, pipeline: str) -> str:
 # Создать и сохранить индекс
 
 def create_faiss_index(embeddings: List[List[float]], passages: List[str], file_id: str, pipeline: str):
+    # Ensure index directory exists
+    os.makedirs(INDEX_DIR, exist_ok=True)
     dim = len(embeddings[0])
     index = faiss.IndexFlatL2(dim)
     arr = np.array(embeddings).astype('float32')

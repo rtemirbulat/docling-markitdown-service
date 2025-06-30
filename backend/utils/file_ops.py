@@ -3,7 +3,7 @@ import uuid
 import shutil
 import zipfile
 import tempfile
-from typing import List
+from typing import List, Tuple
 from zipfile import ZipFile
 
 DATA_ORIGINAL = os.path.join("data", "original")
@@ -15,7 +15,7 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 # Сохранение файла
-def save_file(file_bytes: bytes, ext: str) -> str:
+def save_file(file_bytes: bytes, ext: str) -> Tuple[str, str]:
     os.makedirs(DATA_ORIGINAL, exist_ok=True)
     file_id = generate_uuid()
     path = os.path.join(DATA_ORIGINAL, f"{file_id}.{ext}")
@@ -40,10 +40,12 @@ def save_index(file_id: str, index_json: str) -> str:
     return path
 
 # Сохраняет файл в data/original с уникальным именем
-def save_original_file(file_bytes: bytes, ext: str) -> str:
+def save_original_file(file_bytes: bytes, ext: str) -> Tuple[str, str]:
     """
     Сохраняет файл и возвращает путь (uuid.ext)
     """
+    # Ensure destination directory exists to avoid FileNotFoundError
+    os.makedirs(os.path.join("data", "original"), exist_ok=True)
     file_id = str(uuid.uuid4())
     path = os.path.join("data", "original", f"{file_id}.{ext}")
     with open(path, "wb") as f:
@@ -52,6 +54,7 @@ def save_original_file(file_bytes: bytes, ext: str) -> str:
 
 # Сохраняет markdown-файл
 def save_markdown_file(file_id: str, md_text: str) -> str:
+    os.makedirs(os.path.join("data", "markdown"), exist_ok=True)
     path = os.path.join("data", "markdown", f"{file_id}.md")
     with open(path, "w", encoding="utf-8") as f:
         f.write(md_text)
@@ -60,6 +63,7 @@ def save_markdown_file(file_id: str, md_text: str) -> str:
 # Проверяет допустимое расширение
 def allowed_ext(filename: str) -> bool:
     allowed = {"pdf", "docx", "xlsx", "csv", "txt", "pptx"}
+    allowed.add("md")
     return filename.lower().split(".")[-1] in allowed
 
 # Извлекает все PDF из ZIP, возвращает список (имя, bytes)

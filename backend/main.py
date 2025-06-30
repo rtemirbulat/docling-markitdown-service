@@ -68,8 +68,8 @@ async def query(request: QueryRequest):
     from backend.utils.embedding import get_embeddings
     query_emb = get_embeddings([request.question])[0]
     # Поиск top_k
-    (top_idxs, _), passages_list = search_faiss_index(file_id, request.pipeline, query_emb, request.top_k)
-    top_passages = [passages_list[i] for i, _ in top_idxs]
+    top_pairs, passages_list = search_faiss_index(file_id, request.pipeline, query_emb, request.top_k)
+    top_passages = [passages_list[i] for i, _ in top_pairs]
     # LLM
     prompt = build_prompt(top_passages, request.question)
     llm_response = ask_llm(prompt)
@@ -87,8 +87,18 @@ async def process_file_job(job_id, orig_path, file_id, pipeline):
         jobs[job_id]["status"] = "converting"
         jobs[job_id]["progress"] = 0.1
         md_path = os.path.join("data", "markdown", f"{file_id}.md")
-        # Конвертация
-        real_pipeline = convert_to_markdown(orig_path, md_path, pipeline)
+        # Определяем расширение исходного файла
+        ext = os.path.splitext(orig_path)[1].lower().lstrip(".")
+
+        # Если уже Markdown — пропускаем конвертацию
+        if ext == "md":
+            # Убедимся, что директория существует
+            os.makedirs(os.path.dirname(md_path), exist_ok=True)
+            shutil.copyfile(orig_path, md_path)
+            real_pipeline = "markdown"
+        else:
+            # Конвертация в зависимости от выбранного pipeline
+            real_pipeline = convert_to_markdown(orig_path, md_path, pipeline)
         jobs[job_id]["progress"] = 0.3
         # Чтение markdown
         with open(md_path, encoding="utf-8") as f:
