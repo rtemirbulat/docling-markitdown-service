@@ -1,25 +1,27 @@
+version: "3.9"
+
+x-app-image: &app-image
+  build: .
+  image: docling-service:latest      # собираем один раз
+  volumes:
+    - ./data:/app/data
+    - ./:/app                        # чтобы --reload видел изменения
+  env_file: .env
 
 services:
   backend:
-    build: .
+    <<: *app-image
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - ./data:/app/data
-      - ./backend/.env:/app/backend/.env
-    ports:
-      - "8000:8000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports: ["8000:8000"]
+    restart: unless-stopped
 
   frontend:
-    build: .
+    <<: *app-image
     command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
-    volumes:
-      - ./data:/app/data
-    ports:
-      - "8501:8501"
-    depends_on:
-      - backend
+    environment:
+      - API_URL=http://backend:8000
+    ports: ["8501:8501"]
+    depends_on: [backend]
 
 volumes:
   data: 
