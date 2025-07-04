@@ -106,7 +106,7 @@ pipeline_used = st.session_state.get("pipeline_used", pipeline)
 if job_id and st.button("Показать чат и параметры"):
     st.header("Извлечение параметров школы")
     question = st.text_input("Ваш вопрос (например: 'Извлеките все параметры школы')", value="Извлеките все параметры школы")
-    top_k = st.slider("Сколько фрагментов использовать?", 1, 10, 5)
+    top_k = st.slider("Сколько фрагментов использовать?", 1, 50, 10)
     if st.button("Запросить LLM"):
         with st.spinner("Запрос к LLM..."):
             payload = {"question": question, "top_k": top_k, "pipeline": pipeline_used}
@@ -117,10 +117,12 @@ if job_id and st.button("Показать чат и параметры"):
                 data = resp.json()
                 answer = data["answer"]
                 passages = data["passages"]
-                st.subheader("Ответ LLM (параметры)")
-                df = pd.DataFrame(list(answer.items()), columns=["Параметр", "Значение"])
-                st.dataframe(df)
-                st.download_button("Экспорт в CSV", df.to_csv(index=False).encode("utf-8"), file_name="school_params.csv", mime="text/csv")
+                st.subheader("Ответ LLM")
+                if isinstance(answer, dict):
+                    df = pd.DataFrame(list(answer.items()), columns=["Ключ", "Значение"])
+                    st.dataframe(df)
+                else:
+                    st.markdown(answer)
                 st.subheader("Использованные фрагменты Markdown")
                 for i, passage in enumerate(passages):
                     st.markdown(f"**Фрагмент {i+1}:**\n\n" + passage) 

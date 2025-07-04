@@ -1,13 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, Dict
-
-# Параметры школы (ключи на русском)
-SCHOOL_PARAMS = [
-    "Школа", "ТИП", "ПОДТИП", "КОЛИЧЕСТВО УЧЕНИКОВ", "КВАДРАТУРА", "ЭТАЖНОСТЬ",
-    "ПЛОЩАДЬ ЗЕМЛИ", "НАЛИЧИЕ ДЕМОНТАЖНЫХ РАБОТ", "ФИТНЕСС-ЗАЛ", "РЕЗЕРВУАРЫ",
-    "КОТЕЛЬНАЯ", "НАРУЖНЫЙ СТАДИОН", "КОЛИЧЕСТВО СПОРТЗАЛОВ", "МАЛЫЙ СПОРТЗАЛ",
-    "БОЛЬШОЙ СПОРТЗАЛ", "РЕГИОН"
-]
+from typing import List, Literal, Optional
 
 class UploadResponse(BaseModel):
     job_id: str = Field(..., description="ID фоновой задачи")
@@ -23,5 +15,5 @@ class QueryRequest(BaseModel):
     pipeline: Literal["docling", "markitdown", "markdown"]
 
 class QueryResult(BaseModel):
-    answer: Dict[str, str]  # Ключи — параметры школы
-    passages: List[str]     # Markdown-фрагменты, использованные для ответа 
+    answer: str            # Текстовый ответ LLM
+    passages: List[str]   # Markdown-фрагменты, использованные для ответа 

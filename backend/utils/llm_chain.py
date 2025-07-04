@@ -1,7 +1,6 @@
 import openai
 import os
-from backend.utils.params import SCHOOL_PARAMS, PARAM_VARIANTS
-from typing import List, Dict, Optional
+from typing import List
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 assert OPENAI_API_KEY, "OPENAI_API_KEY не найден в окружении!"
@@ -9,23 +8,14 @@ assert OPENAI_API_KEY, "OPENAI_API_KEY не найден в окружении!"
 # Формируем prompt для LLM
 
 def build_prompt(passages: List[str], question: str) -> str:
-    """
-    Собирает prompt для LLM: сначала инструкции, затем фрагменты, затем вопрос.
-    """
-    params_str = ', '.join(SCHOOL_PARAMS)
-    prompt = f"""
-Ты — эксперт по анализу школьной документации. Извлеки значения следующих параметров (ключи на русском, значения — как в тексте):
-{params_str}
-
-Используй только предоставленные фрагменты документа (в формате Markdown):
-
-"""
+    """Формирует prompt: перечисляет фрагменты и задаёт вопрос. Без жёстких инструкций по параметрам."""
+    prompt = "Ты — помощник, который отвечает на вопросы по документу. Используй только предоставленные фрагменты Markdown.\n\n"
     for i, passage in enumerate(passages):
         # Добавляем очередной фрагмент документа в prompt (KISS)
         prompt += f"""Фрагмент {i+1}:
 {passage}
 \n"""
-    prompt += f"\nВопрос: {question}\n\nОтвет верни в виде JSON, где ключи — параметры, а значения — строки или null. Не придумывай значения, если их нет в тексте."
+    prompt += f"\nВопрос: {question}\n\nОтветь кратко и по существу на русском языке."
     return prompt
 
 # Вызов LLM (GPT-4o)
@@ -43,14 +33,7 @@ def ask_llm(prompt: str) -> str:
 
 # Постобработка: привести ключи к SCHOOL_PARAMS, учесть варианты
 
-def normalize_answer(llm_json: Dict[str, Optional[str]]) -> Dict[str, Optional[str]]:
-    """
-    Приводит ключи к SCHOOL_PARAMS, учитывая русские варианты.
-    Возвращает значения параметров или None, если не найдено (KISS, SOLID)
-    """
-    result: Dict[str, Optional[str]] = {k: None for k in SCHOOL_PARAMS}  # Инициализация с None
-    for key, value in llm_json.items():
-        for param, variants in PARAM_VARIANTS.items():
-            if key.lower() in [v.lower() for v in variants] or key.lower() == param.lower():
-                result[param] = value  # Присваиваем строку или None
-    return result 
+def normalize_answer(obj):
+    return obj
+
+# Для совместимости оставляем заглушку normalize_answer, возвращающую исходную строку или объект 

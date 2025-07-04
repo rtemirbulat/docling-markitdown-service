@@ -9,9 +9,8 @@ from backend.utils.file_ops import save_original_file, allowed_ext, extract_pdfs
 from backend.utils.conversion import convert_to_markdown
 from backend.utils.embedding import chunk_markdown, get_embeddings
 from backend.utils.faiss_index import create_faiss_index, search_faiss_index, load_faiss_index
-from backend.utils.llm_chain import build_prompt, ask_llm, normalize_answer
+from backend.utils.llm_chain import build_prompt, ask_llm
 import uuid
-import json
 from typing import Dict, List
 import tempfile
 import zipfile
@@ -115,11 +114,7 @@ async def query(request: QueryRequest):
     # LLM
     prompt = build_prompt(top_passages, request.question)
     llm_response = ask_llm(prompt)
-    try:
-        llm_json = json.loads(llm_response)
-    except Exception:
-        llm_json = {}
-    answer = normalize_answer(llm_json)
+    answer = llm_response.strip()
     return QueryResult(answer=answer, passages=top_passages)
 
 @app.get("/download-markdown/{job_id}")
